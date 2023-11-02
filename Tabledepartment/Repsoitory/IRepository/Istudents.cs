@@ -10,6 +10,7 @@ namespace Tabledepartment.Repsoitory.IRepository
         bool deletestudent(int id);
 
        Students GetStudents(int id);
+        ICollection<Students> GetStudentsByDepartment(int departmentId);
         bool save();
     }
 }

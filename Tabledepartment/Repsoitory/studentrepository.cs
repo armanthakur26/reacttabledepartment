@@ -46,5 +46,11 @@ namespace Tabledepartment.Repsoitory
            _context.students.Update(students);
             return save();
         }
+        public ICollection<Students> GetStudentsByDepartment(int departmentId)
+        {
+            return _context.students
+                .Where(s => s.department.Id == departmentId).Include(s => s.department)
+                .ToList();
+        }
     }
 }

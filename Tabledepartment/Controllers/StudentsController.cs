@@ -39,5 +39,11 @@ namespace Tabledepartment.Controllers
             var student = _students.updatestudent(students);
             return Ok(student);
         }
+        [HttpGet("department/{departmentId}")]
+        public IActionResult GetStudentsByDepartment(int departmentId)
+        {
+            var students = _students.GetStudentsByDepartment(departmentId);
+            return Ok(students);
+        }
     }
 }

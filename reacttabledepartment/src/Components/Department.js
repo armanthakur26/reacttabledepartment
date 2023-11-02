@@ -1,10 +1,7 @@
 import axios from 'axios';
 import React, { Component } from 'react'
 import DataTable from 'react-data-table-component'
-
-
-
-
+import { Link } from 'react-router-dom';
 class Department extends Component {
     constructor(props) {
         super(props);
@@ -23,11 +20,12 @@ class Department extends Component {
             isdelete:false, 
             selectall:[],
             iseditmultiple:false,
+            expandedStudentData: [],
         };
       }
       componentDidMount() {
         this.getdepartments();
-        this. getstudents();
+        this.expandDepartment();
       }
       getdepartments=()=>{
         axios
@@ -180,18 +178,47 @@ class Department extends Component {
             console.error("Error editing shipment:", error);
           }
         };
-        getstudents=()=>{
-          axios
-            .get("https://localhost:7038/api/Students")
-            .then((response) => { this.setState({ Students: response.data}); console.log( this.state.Students);})
-            .catch((error) => {
-              console.log(error);
-            });
-        }
+        
+        expandDepartment = async (id) => {
+          try {
+            const response = await axios.get(
+              `https://localhost:7038/api/Students/department/${id}`
+            );
+            this.setState({ expandedStudentData: response.data });
+            console.log(response.data);
+          } catch (error) {
+            console.error('Error fetching related students:', error);
+          }
+        };
+ 
+        expandableRowsComponent = () => {
+          const studentscolumns = [
+          {
+            name: "Student Name",
+            selector: (e) => e.name,
+            sortable: true,
+          },
+          {
+            name: "Student Age",
+            selector: (e) => e.age,
+            sortable: true,
+          },]
+          return (
+            <div>
+           <DataTable  
+           columns={studentscolumns}
+           data={this.state.expandedStudentData}
+           pagination 
+           highlightOnHover
+           fixedHeader
+            />
+            </div>
+          );
+        };
   render() {
     const columns = [
         {
-          name: "Name",
+          name: "Brach Name",
           selector: (e) => e.name,
           sortable: true,
         },
@@ -212,8 +239,9 @@ class Department extends Component {
         },]
     return (
       
-      <div>
-   <h2>Department</h2>
+      <div  style={{height:"50%",width:"50%", marginLeft:"20%"}}>
+   <h2>Department Details</h2>
+
    {this.state.iseditmultiple && (
 <div class="modal fade" id="editmultiple" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog" role="document">
@@ -264,6 +292,8 @@ class Department extends Component {
       </div>
     </div>
   </div></div>}
+   
+   <Link to="/Students"><button type="button" class="btn btn-primary"style={{marginRight:'90%'}}  >Go to Students portal</button></Link>
    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addDepartmentModal" style={{marginLeft:'80%'}} onClick={this.adddata}>Add Department</button>
 {this.state.isadd && (
   <div class="modal fade" id="addDepartmentModal" tabindex="-1" role="dialog" aria-labelledby="addDepartmentModalLabel" aria-hidden="true">
@@ -332,7 +362,8 @@ class Department extends Component {
     </div>
   </div>
 )}
-   <DataTable
+
+   <DataTable 
     columns={columns}
     data={this.state.Department}
     pagination
@@ -346,10 +377,13 @@ class Department extends Component {
    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#editmultiple" onClick={this.editDatamultiple} > <i className="fas fa-edit"></i></button>&nbsp;
    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#Deleteallmodel" onClick={this.isdeletemodel}><i className="fas fa-trash"></i></button>
   </div>}
-   expandableRows
-   expandableRowExpanded={() =>false}
-   expandableRowsComponent={this.expenddata}/>
-    
+  expandableRows
+  expandableRowsComponent={(row)=>this.expandableRowsComponent(row.id)}
+ //onRowMouseEnter={(row)=>this.expandDepartment(row.id)}
+ expandOnRowClicked={(row)=>this.expandDepartment(row.id)}
+onRowClicked={(row)=>this.expandDepartment(row.id)}
+
+/>
       </div>
     )
   }
