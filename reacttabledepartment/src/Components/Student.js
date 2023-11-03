@@ -76,6 +76,20 @@ class Student extends Component {
 
   createStudent = async () => {
     const { newstudent } = this.state;
+    if (newstudent.name.length==0) {
+      alert("Please enter a valid name.");
+      return;
+    }
+  
+    if (newstudent.age.length==0) {
+      alert("Please enter a valid age.");
+      return;
+    }
+  
+    if (!newstudent.departmentId) {
+      alert("Please select a department.");
+      return;
+    }
     try {
       const response = await axios.post("https://localhost:7038/api/Students", newstudent);
       console.log('Student created:', response.data);
