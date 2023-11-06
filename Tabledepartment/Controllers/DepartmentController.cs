@@ -39,6 +39,17 @@ namespace Tabledepartment.Controllers
             var edit=_department.Updatedepartment(department);
             return Ok(edit);
         }
-       
+        [HttpDelete("multiple")]
+        public IActionResult DeleteMultipleDepartments([FromBody] List<int> departmentIds)
+        {
+            var isDeleted = _department.deleteMultipleDepartments(departmentIds);
+            return Ok("delete sucessfully");
+        }
+        [HttpPut("multiple")]
+        public IActionResult EditMultipleDepartments([FromBody] List<Department> updatedDepartments)
+        {
+            var isUpdated = _department.updateMultipleDepartments(updatedDepartments);
+            return Ok(isUpdated);
+        }
     }
 }

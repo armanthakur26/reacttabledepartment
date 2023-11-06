@@ -52,5 +52,13 @@ namespace Tabledepartment.Repsoitory
                 .Where(s => s.department.Id == departmentId).Include(s => s.department)
                 .ToList();
         }
+
+        public bool deletemultistudent(List<int> studentsid)
+        {
+            var studentdelete = _context.students.Where(d => studentsid.Contains(d.Id)).ToList();
+            _context.students.RemoveRange(studentdelete);
+            return save();
+        }
+
     }
 }

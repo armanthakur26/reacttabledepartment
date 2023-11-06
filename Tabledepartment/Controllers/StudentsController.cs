@@ -45,5 +45,11 @@ namespace Tabledepartment.Controllers
             var students = _students.GetStudentsByDepartment(departmentId);
             return Ok(students);
         }
+        [HttpDelete("multiple")]
+        public IActionResult DeleteMultiplestudents([FromBody] List<int> studentids)
+        {
+            var isDeleted = _students.deletemultistudent(studentids);
+            return Ok("delete sucessfully");
+        }
     }
 }

@@ -2,6 +2,10 @@
 import React, { Component } from 'react'
 import DataTable from 'react-data-table-component'
 import { Link } from 'react-router-dom';
+import {  CSVLink } from "react-csv";
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
+
 class Department extends Component {
     constructor(props) {
         super(props);
@@ -46,16 +50,18 @@ class Department extends Component {
       }
       addInput = (e) => {
         const { name, value } = e.target;
-       this.setState((prevdata) => ({
-         newdepartment: { ...prevdata.newdepartment, [name]: value },
-        }));
+        this.setState({
+          newdepartment: { ...this.state.newdepartment, [name]: value },
+        });
       };
+      
        handleAddImageChange = (event) => {
+        const{newdepartment}=this.state
         const imageFile = event.target.files[0];
         const reader = new FileReader();
         reader.onloadend = () => {
-          this.setState((prevState) => ({
-            newdepartment: { ...prevState.newdepartment, image: reader.result },
+          this.setState(({
+            newdepartment: { ...newdepartment, image: reader.result },
           }));
         };
         if (imageFile) {
@@ -65,6 +71,7 @@ class Department extends Component {
       handleSubmit = async (e) => {
         e.preventDefault(); 
         const { name,  image } = this.state.newdepartment;
+        const{Department}=this.state
         if (name.length === 0) {
           alert("Please Enter Name");
           return;
@@ -78,8 +85,8 @@ class Department extends Component {
             name,
             image,
           });
-          this.setState((prevState) => ({
-            Department: [...prevState.Department, response.data],
+          this.setState(({
+            Department: [...Department, response.data],
             isadd: false,
           }));
         } catch (error) {
@@ -97,9 +104,10 @@ class Department extends Component {
       };
       editInput = (e) => {
         const { name, value } = e.target;
-        this.setState((prevdata) => ({
-          editdepartment: { ...prevdata.editdepartment, [name]: value },
-        }));
+        const{editdepartment}=this.state
+        this.setState({
+          editdepartment: { ...editdepartment, [name]: value },
+        });
       };
       EditSubmitbutton = async (e) => {
         e.preventDefault();
@@ -114,27 +122,30 @@ class Department extends Component {
             name,
             image,
           });
-          this.setState((prevState) => ({
-            Department: prevState.Department.map((department) => {
+          this.setState({
+            Department: this.state.Department.map(department =>{
               if (department.id === id) {
-                return {...department, name,image };
-              } else {
-                return department;
-              }
-            }),
+              return {...department, name,image };
+            } else {
+              return department;
+            }}
+            ),
             isedit: false,
-          }));
+          });          
+          console.log("Department edited successfully");
         } catch (error) {
-          console.error("Error editing shipment:", error);
+          console.error("Error editing department:", error);
         }
       };
+
       handleeditimagechange = (event) => {
+        const {editdepartment}=this.state
         const imageFile = event.target.files[0];
         const reader = new FileReader();
         reader.onloadend = () => {
-          this.setState((prevState) => ({
-            editdepartment: { ...prevState.editdepartment, image: reader.result },
-          }));
+          this.setState({
+            editdepartment: { ...editdepartment, image: reader.result },
+          });
         };
         if (imageFile) {
           reader.readAsDataURL(imageFile);
@@ -146,60 +157,71 @@ class Department extends Component {
       Deletedata = async (Id) => {
         try {
           await axios.delete(`https://localhost:7038/api/Department?id=${Id}`);
-          this.setState((prevState) => ({
-            Department: prevState.Department.filter((department) => department.id !== Id),
-          }));
+          this.setState({
+            Department: this.state.Department.filter((department) => department.id !== Id),
+          });
+          console.log("Department deleted successfully");
         } catch (error) {
-          console.error("Error deleting shipment:", error);
+          console.error("Error deleting department:", error);
         }
-      };
+      }; 
       handlealldelete=async() =>{
         const {selectall}=this.state;
-        try{
-          for(const id of selectall)
-          {
-            await axios.delete(`https://localhost:7038/api/Department?id=${id}`)
-            this.setState((prevState) => ({
-              Department: prevState.Department.filter((department) => !selectall.includes(department.id)),
-              isdelete:false,
-            }));
-          }  
-        }catch (error) {
-          console.error("Error deleting shipment:", error);
-        }
+        axios.delete("https://localhost:7038/api/Department/multiple",{
+          data:selectall,
+        })
+        .then((responce)=>{
+          console.log("department delete successfully");
+          window.location.reload();
+        }).catch((error)=>{
+          console.error("error delete items",error);
+        });
       }  
       editDatamultiple = () => {
-        this.setState({ iseditmultiple: true, });};
-      editmultiple = async (e) => {
-          e.preventDefault();
-          const { selectall } = this.state;
-          const { id,name,image} = this.state.editdepartment; 
-          try {
-            for (const ids of selectall) {
-              await axios.put(`https://localhost:7038/api/Department?id=${ids}`, {
-                id:ids,
-                name,
-                image,
-              });
-              this.setState((prevState) => ({
-                Department: [...prevState.Department],
-                iseditmultiple: false,
-              }));
-              this.getdepartments();
-            }
-          } catch (error) {
-            console.error("Error editing shipment:", error);
+        const { selectall, Department } = this.state;
+        if (selectall.length === 1) {
+          const selectedDepartment = Department.find((department) => department.id === selectall[0]);
+          if (selectedDepartment) {
+            this.setState({ editdepartment: { ...selectedDepartment }, });
           }
-        };
-      
+        } else {
+          this.setState({
+            editdepartment: {
+              name: "",
+              image: null,
+            },
+          });
+        }
+        this.setState({ iseditmultiple: true });
+      };
+      editmultiple = async () => {
+        const { selectall, editdepartment } = this.state;
+        try {
+          const requestData = selectall.map(id => ({
+            id,
+            name: editdepartment.name,
+            image: editdepartment.image,
+          }));
+          const response = await axios.put('https://localhost:7038/api/Department/multiple', requestData);
+          this.setState({
+            Department: response.data,
+            iseditmultiple: false,
+          });
+          window.location.reload();
+          console.log('Departments edited successfully');
+        } catch (error) {
+          console.error('Error editing departments:', error);
+        }
+      };
         expandDepartment = async (id) => {
+          const {expandedStudentData}=this.state
           try {
             const response = await axios.get(
               `https://localhost:7038/api/Students/department/${id}`
             );
-            this.setState((e) => ({
-              expandedStudentData: { ...e.expandedStudentData,[id]: response.data, },
-            }));
+            this.setState({
+              expandedStudentData: { ...expandedStudentData,[id]: response.data, },
+            });
           } catch (error) {
             console.error('Error fetching related students:', error);
           }
@@ -233,7 +255,26 @@ class Department extends Component {
             </div>
           );
         };
+        generatePDF = async () => {
+          const { Department } = this.state;
+          const pdf = new jsPDF();
+          let space = 10;
+          Department.forEach((department) => {
+            const img = new Image();
+            img.src = department.image;
+            pdf.text(`Department Name: ${department.name}`, 10, space);
+            pdf.addImage(img, 'JPEG', 10, space , 50, 50);
+            space += 70;
+          });
+          pdf.save('departments.pdf');
+        };
+        
   render() {
+    const csvData = this.state.Department.map((department) => ({
+      Name: department.name,
+      Image:department.image
+     
+    }));
     const columns = [
         {
           name: "Brach Name",
@@ -397,6 +438,16 @@ class Department extends Component {
   expandableRows
   expandableRowsComponent={this.expenddata}
  onRowMouseEnter={(row)=> this.expandDepartment(row.id)}
+ subHeader
+ subHeaderComponent={
+   <div>
+   <button><CSVLink filename="my-file.csv" data={csvData}><i className="fa-regular fa-file-excel" style={{ color: 'green' }}></i></CSVLink></button>
+   <button type="button"  onClick={this.generatePDF}  style={{ color: 'red' }}>
+   <i class="fas fa-file-pdf"></i>
+</button>
+
+ </div>
+ }
 />
       </div>
     )

@@ -51,6 +51,28 @@ namespace Tabledepartment.Repsoitory
             return save();
         }
 
+        public bool deleteMultipleDepartments(List<int> departmentIds)
+        {
+            var departmentsToDelete = _context.departments.Where(d => departmentIds.Contains(d.Id)).ToList();
+            _context.departments.RemoveRange(departmentsToDelete);
+            return save();
+        }
+        public bool updateMultipleDepartments(List<Department> updatedDepartments)
+        {
+            foreach (var updatedDepartment in updatedDepartments)
+            {
+                var existingDepartment = _context.departments.Find(updatedDepartment.Id);
+                if (existingDepartment != null)
+                {
+                    existingDepartment.Name = updatedDepartment.Name;
+                    if (updatedDepartment.Image != null)
+                    {
+                        existingDepartment.Image = updatedDepartment.Image;
+                    }
+                }
+            }
+            return save();
+        }
 
 
 
