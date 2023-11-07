@@ -3,8 +3,7 @@ import axios from 'axios';
 import DataTable from 'react-data-table-component';
 import { Link } from 'react-router-dom';
 import {  CSVLink } from "react-csv";
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf'
 
 
 class Student extends Component {
@@ -27,18 +26,25 @@ class Student extends Component {
         departmentId: '',
       },
       selectall:[],
+       search: '',
+      filter: [],
     };
   }
   componentDidMount() {
     this.getStudents();
     this.getDepartments(); 
   }
-
+  handleSearchChange = (e) => {
+    const search = e.target.value;
+    const result = this.state.Students.filter((e) => {
+        return e.name.toLowerCase().includes(search.toLowerCase())|| e.department.name.toLowerCase().includes(search.toLowerCase());
+    });
+    this.setState({ search, filter: result });
+}  
   getStudents = () => {
-    axios
-      .get("https://localhost:7038/api/Students")
+    axios.get("https://localhost:7038/api/Students")
       .then((response) => {
-        this.setState({ Students: response.data });
+        this.setState({ Students: response.data ,filter:response.data});
         console.log(response.data)
       })
       .catch((error) => {
@@ -88,19 +94,16 @@ const {newstudent}=this.state
       newstudent: { ...newstudent,[name]: value, },
     });
   };
-  
   createStudent = async () => {
     const { newstudent } = this.state;
     if (newstudent.name.length==0) {
       alert("Please enter a valid name.");
       return;
     }
-  
     if (newstudent.age.length==0) {
       alert("Please enter a valid age.");
       return;
     }
-  
     if (!newstudent.departmentId) {
       alert("Please select a department.");
       return;
@@ -113,25 +116,18 @@ const {newstudent}=this.state
       console.error('Error creating student:', error);
     }
   }
-  DepartmentOptions() {
-    return this.state.departments.map((department) => (
-      <option key={department.id} value={department.id}>
-        {department.name}
-      </option>
-    ));
-  }
   Deletedata = async (Id) => {
     try {
       await axios.delete(`https://localhost:7038/api/Students?id=${Id}`);
       this.setState({
         Students: this.state.Students.filter((student) => student.id !== Id),
+        filter: this.state.filter.filter((student) => student.id !== Id),
       });
       console.log("student deleted successfully");
     } catch (error) {
       console.error("Error deleting department:", error);
     }
   };
- 
   editData = (id) => {
     const students = this.state.Students.find((student) => student.id === id);
     if (students) {
@@ -161,13 +157,13 @@ const {newstudent}=this.state
         departmentid,
       });
       this.setState({
-        Students: this.state.Students.map((student) =>{
+        filter: this.state.filter.map((student) =>{
           if (student.id === id) {
             return {...student, name,age,departmentid };
           } else {
             return student;
           }
-    }),isedit: false,
+    }),isedit: false
   })
     } catch (error) {
       console.error("Error editing shipment:", error);
@@ -190,7 +186,6 @@ const {newstudent}=this.state
       console.error("error delete items",error);
     });
   }  
- 
   render() {
     const csvData = this.state.Students.map((student) => ({
       Name: student.name,
@@ -217,10 +212,9 @@ const {newstudent}=this.state
         name: "Actions",
         selector: (e) => (
           <>
-              <button  type="button" class="btn btn-primary" data-toggle="modal" data-target="#editDepartmentModal" className="btn btn-danger" onClick={() => this.editData(e.id)}>
+              <button  type="button" class="btn btn-primary" data-toggle="modal" data-target="#editDepartmentModal" className="btn btn-danger" onClick={()=> this.editData(e.id)}>
               <i className="fas fa-edit"></i>
-              </button>
-            &nbsp;
+              </button> &nbsp;
             <button className="btn btn-danger" onClick={() => this.Deletedata(e.id)}> <i className="fas fa-trash"></i> </button>
           </>
         ),
@@ -228,6 +222,7 @@ const {newstudent}=this.state
     ];
 
     return (
+      
       <div  style={{height:"50%",width:"50%", marginLeft:"20%"}}>
         <h2>Students Detail</h2>
         <Link to="/Department"><button type="button" class="btn btn-primary"style={{marginRight:'85%'}}  >Go To Department portal</button></Link>
@@ -269,8 +264,9 @@ const {newstudent}=this.state
               onChange={this.handleInputChange}
             >
               <option value="">Select Department</option>
-              {this.DepartmentOptions()}
-            </select>
+        {this.state.departments.map((department) => ( <option key={department.id} value={department.id}>{department.name}</option>
+    ))}
+  </select>
           </div>
         </div>
         <div class="modal-footer">
@@ -346,7 +342,7 @@ const {newstudent}=this.state
   </div></div>}
         <DataTable
           columns={columns}
-          data={this.state.Students}
+          data={this.state.filter}
           pagination
           selectableRows
           onSelectedRowsChange={({ selectedRows }) => {
@@ -360,15 +356,13 @@ const {newstudent}=this.state
           subHeader
           subHeaderComponent={
             <div>
-           <button><CSVLink filename="my-file.csv" data={csvData}><i className="fa-regular fa-file-excel" style={{ color: 'green' }}></i></CSVLink></button>
-           <button type="button"  onClick={this.generatePDF}  style={{ color: 'red' }}> <i class="fas fa-file-pdf"></i>
-</button>
-
+               <input  type="text"  placeholder="Search..."   value={this.state.search}  onChange={this.handleSearchChange} />&nbsp;
+           <button><CSVLink filename="my-file.csv" data={csvData}><i className="fa-regular fa-file-excel" style={{ color: 'green'}}></i></CSVLink></button>&nbsp;
+           <button type="button"  onClick={this.generatePDF}  style={{ color: 'red' }}> <i class="fas fa-file-pdf"></i></button>
           </div>
           }
           contextActions={<div>
            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#Deleteallmodel" onClick={this.isdeletemodel}><i className="fas fa-trash"></i></button>
-           
           </div>}
         />
       </div>

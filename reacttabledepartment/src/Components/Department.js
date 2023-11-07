@@ -4,7 +4,7 @@ import DataTable from 'react-data-table-component'
 import { Link } from 'react-router-dom';
 import {  CSVLink } from "react-csv";
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import Student from './Student';
 
 class Department extends Component {
     constructor(props) {
@@ -25,17 +25,25 @@ class Department extends Component {
             selectall:[],
             iseditmultiple:false,
             expandedStudentData: [],
-            
+            search: '',
+            filter: [], 
         };
       }
       componentDidMount() {
         this.getdepartments();
         this.expandDepartment();
       }
+      handleSearchChange = (e) => {
+        const search = e.target.value;
+        const result = this.state.Department.filter((e) => {
+            return e.name.toLowerCase().includes(search.toLowerCase());
+        });
+        this.setState({ search, filter: result });
+    }  
       getdepartments=()=>{
         axios
           .get("https://localhost:7038/api/Department")
-          .then((response) => { this.setState({ Department: response.data}); })
+          .then((response) => { this.setState({ Department: response.data,filter:response.data}); })
           .catch((error) => {
             console.log(error);
           });
@@ -50,8 +58,9 @@ class Department extends Component {
       }
       addInput = (e) => {
         const { name, value } = e.target;
+        const {newdepartment}=this.state
         this.setState({
-          newdepartment: { ...this.state.newdepartment, [name]: value },
+          newdepartment: { ...newdepartment, [name]: value },
         });
       };
       
@@ -71,7 +80,7 @@ class Department extends Component {
       handleSubmit = async (e) => {
         e.preventDefault(); 
         const { name,  image } = this.state.newdepartment;
-        const{Department}=this.state
+        const{Department,filter}=this.state
         if (name.length === 0) {
           alert("Please Enter Name");
           return;
@@ -87,6 +96,7 @@ class Department extends Component {
           });
           this.setState(({
             Department: [...Department, response.data],
+            filter: [...filter, response.data],
             isadd: false,
           }));
         } catch (error) {
@@ -123,7 +133,7 @@ class Department extends Component {
             image,
           });
           this.setState({
-            Department: this.state.Department.map(department =>{
+            filter: this.state.filter.map(department =>{
               if (department.id === id) {
               return {...department, name,image };
             } else {
@@ -137,7 +147,6 @@ class Department extends Component {
           console.error("Error editing department:", error);
         }
       };
-
       handleeditimagechange = (event) => {
         const {editdepartment}=this.state
         const imageFile = event.target.files[0];
@@ -159,6 +168,7 @@ class Department extends Component {
           await axios.delete(`https://localhost:7038/api/Department?id=${Id}`);
           this.setState({
             Department: this.state.Department.filter((department) => department.id !== Id),
+            filter: this.state.filter.filter((department) => department.id !== Id),
           });
           console.log("Department deleted successfully");
         } catch (error) {
@@ -176,7 +186,7 @@ class Department extends Component {
         }).catch((error)=>{
           console.error("error delete items",error);
         });
-      }  
+      } 
       editDatamultiple = () => {
         const { selectall, Department } = this.state;
         if (selectall.length === 1) {
@@ -205,6 +215,7 @@ class Department extends Component {
           const response = await axios.put('https://localhost:7038/api/Department/multiple', requestData);
           this.setState({
             Department: response.data,
+            filter:response.data,
             iseditmultiple: false,
           });
           window.location.reload();
@@ -226,6 +237,20 @@ class Department extends Component {
             console.error('Error fetching related students:', error);
           }
         };
+        generatePDF = async () => {
+          const { Department } = this.state;
+          const pdf = new jsPDF();
+          let space = 10;
+          Department.forEach((department) => {
+            const img = new Image();
+            img.src = department.image;
+            pdf.text(`Department Name: ${department.name}`, 10, space);
+            pdf.addImage(department.image, 'JPEG', 10, space+10 , 50, 50);
+            space += 70;
+          });
+          pdf.save('departments.pdf');
+        };  
+       
         expenddata = (row) => {
          const expandedData = this.state.expandedStudentData[row.data.id] || [];
           const studentscolumns = [
@@ -245,7 +270,7 @@ class Department extends Component {
           },]
           return (
             <div>
-           <DataTable  
+           <DataTable 
            columns={studentscolumns}
            data={expandedData}
            pagination 
@@ -255,20 +280,6 @@ class Department extends Component {
             </div>
           );
         };
-        generatePDF = async () => {
-          const { Department } = this.state;
-          const pdf = new jsPDF();
-          let space = 10;
-          Department.forEach((department) => {
-            const img = new Image();
-            img.src = department.image;
-            pdf.text(`Department Name: ${department.name}`, 10, space);
-            pdf.addImage(img, 'JPEG', 10, space , 50, 50);
-            space += 70;
-          });
-          pdf.save('departments.pdf');
-        };
-        
   render() {
     const csvData = this.state.Department.map((department) => ({
       Name: department.name,
@@ -299,7 +310,6 @@ class Department extends Component {
     return (
       <div  style={{height:"50%",width:"50%", marginLeft:"20%"}}>
    <h2>Department Details</h2>
-
    {this.state.iseditmultiple && (
 <div class="modal fade" id="editmultiple" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog" role="document">
@@ -420,10 +430,9 @@ class Department extends Component {
     </div>
   </div>
 )}
-
    <DataTable 
     columns={columns}
-    data={this.state.Department}
+    data={this.state.filter}
     pagination
     selectableRows
     onSelectedRowsChange={( {selectedRows} ) => {const selectall = selectedRows.map((row) => row.id);this.setState( {selectall});}}
@@ -433,7 +442,7 @@ class Department extends Component {
      actions   
    contextActions={<div>
    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#editmultiple" onClick={this.editDatamultiple} > <i className="fas fa-edit"></i></button>&nbsp;
-   <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#Deleteallmodel" onClick={this.isdeletemodel}><i className="fas fa-trash"></i></button>
+   <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#Deleteallmodel" onClick={this.isdeletemodel}><i className="fas fa-trash"></i></button>&nbsp;
   </div>}
   expandableRows
   expandableRowsComponent={this.expenddata}
@@ -441,15 +450,15 @@ class Department extends Component {
  subHeader
  subHeaderComponent={
    <div>
-   <button><CSVLink filename="my-file.csv" data={csvData}><i className="fa-regular fa-file-excel" style={{ color: 'green' }}></i></CSVLink></button>
+     <input type="text" placeholder="Search..." value={this.state.search}onChange={this.handleSearchChange}/>&nbsp;
+   <button><CSVLink filename="my-file.csv" data={csvData}><i className="fa-regular fa-file-excel" style={{ color: 'green' }}></i></CSVLink></button>&nbsp;
    <button type="button"  onClick={this.generatePDF}  style={{ color: 'red' }}>
    <i class="fas fa-file-pdf"></i>
 </button>
-
  </div>
  }
 />
-      </div>
+</div>
     )
   }
 }
