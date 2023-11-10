@@ -37,7 +37,7 @@ class Student extends Component {
   handleSearchChange = (e) => {
     const search = e.target.value;
     const result = this.state.Students.filter((e) => {
-        return e.name.toLowerCase().includes(search.toLowerCase())|| e.department.name.toLowerCase().includes(search.toLowerCase());
+        return e.name.toLowerCase().includes(search.toLowerCase()) || e.department.name.toLowerCase().includes(search.toLowerCase());
     });
     this.setState({ search, filter: result });
 }  
@@ -63,7 +63,19 @@ class Student extends Component {
     });
     pdf.save('students.pdf');
   };
-  
+  generateSelectedPDF = async () => {
+    const { Students, selectall } = this.state;
+    const selectedStudents = Students.filter((student) =>selectall.includes(student.id) );
+    const pdf = new jsPDF();
+    let space = 10;
+    selectedStudents.forEach((student) => {
+      pdf.text(`Name: ${student.name}`, 10, space);
+      pdf.text(`Age: ${student.age}`, 10, space + 10);
+      pdf.text(`Department: ${student.department.name}`, 10, space + 20);
+      space += 30;
+    });
+    pdf.save('selected_students.pdf');
+  };
   adddata=()=>{
     this.setState({
         isadd: true,
@@ -72,11 +84,6 @@ class Student extends Component {
           age: '',
           departmentId: '', 
         }});
-  }
-  handleInputChange = (e) => {
-    this.setState({
-      [e.target.name]: e.target.value,
-    });
   }
   getDepartments = async () => {
     try {
@@ -129,7 +136,7 @@ const {newstudent}=this.state
     }
   };
   editData = (id) => {
-    const students = this.state.Students.find((student) => student.id === id);
+    const students = this.state.filter.find((student) => student.id === id);
     if (students) {
       this.setState({
         isedit: true,
@@ -143,23 +150,21 @@ const {newstudent}=this.state
     this.setState(({
       editstudent: { ...editstudent, [name]: value },
     }));
-  };
- 
-     
+  };  
   EditSubmitbutton = async (e) => {
     e.preventDefault();
-    const { id, name, age, departmentid } = this.state.editstudent;
+    const { id, name, age, departmentId } = this.state.editstudent;
     try {
       await axios.put(`https://localhost:7038/api/Students?id=${id}`, {
         id,
         name,
         age,
-        departmentid,
+        departmentId,
       });
       this.setState({
         filter: this.state.filter.map((student) =>{
           if (student.id === id) {
-            return {...student, name,age,departmentid };
+            return {...student, name,age,departmentId };
           } else {
             return student;
           }
@@ -169,7 +174,6 @@ const {newstudent}=this.state
       console.error("Error editing shipment:", error);
     }
   };
-  
   isdeletemodel=()=>{
     this.setState({isdelete:true})
   }
@@ -212,17 +216,15 @@ const {newstudent}=this.state
         name: "Actions",
         selector: (e) => (
           <>
-              <button  type="button" class="btn btn-primary" data-toggle="modal" data-target="#editDepartmentModal" className="btn btn-danger" onClick={()=> this.editData(e.id)}>
+              <button  type="button" class="btn btn-primary"  title="Edit" data-toggle="modal" data-target="#editDepartmentModal" className="btn btn-danger" onClick={()=> this.editData(e.id)}>
               <i className="fas fa-edit"></i>
               </button> &nbsp;
-            <button className="btn btn-danger" onClick={() => this.Deletedata(e.id)}> <i className="fas fa-trash"></i> </button>
+            <button className="btn btn-danger"  title="Delete" onClick={() => this.Deletedata(e.id)}> <i className="fas fa-trash"></i> </button>
           </>
         ),
       },
     ];
-
     return (
-      
       <div  style={{height:"50%",width:"50%", marginLeft:"20%"}}>
         <h2>Students Detail</h2>
         <Link to="/Department"><button type="button" class="btn btn-primary"style={{marginRight:'85%'}}  >Go To Department portal</button></Link>
@@ -315,7 +317,8 @@ const {newstudent}=this.state
               onChange={this.editInput}
             >
               <option value="">Select Department</option>
-              {this.DepartmentOptions()}
+        {this.state.departments.map((department) => ( <option key={department.id} value={department.id}>{department.name}</option>
+    ))} 
             </select>
           </div>
         </div>
@@ -357,17 +360,18 @@ const {newstudent}=this.state
           subHeaderComponent={
             <div>
                <input  type="text"  placeholder="Search..."   value={this.state.search}  onChange={this.handleSearchChange} />&nbsp;
-           <button><CSVLink filename="my-file.csv" data={csvData}><i className="fa-regular fa-file-excel" style={{ color: 'green'}}></i></CSVLink></button>&nbsp;
-           <button type="button"  onClick={this.generatePDF}  style={{ color: 'red' }}> <i class="fas fa-file-pdf"></i></button>
+           <button><CSVLink filename="my-file.csv"  title="Download Excel" data={csvData}><i className="fa-regular fa-file-excel" style={{ color: 'green'}}></i></CSVLink></button>&nbsp;
+           <button type="button"  title="Download Pdf" onClick={this.generatePDF}  style={{ color: 'red' }}> <i class="fas fa-file-pdf"></i></button>
+           <button>png format</button>
           </div>
           }
           contextActions={<div>
-           <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#Deleteallmodel" onClick={this.isdeletemodel}><i className="fas fa-trash"></i></button>
+           <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#Deleteallmodel" title='Delete' onClick={this.isdeletemodel}><i className="fas fa-trash"></i></button>&nbsp;
+           <button  class="btn btn-primary" onClick={this.generateSelectedPDF}  title="click here to Download Selected list Pdf"  style={{ color: 'red' }}><i class="fas fa-file-pdf"></i></button>
           </div>}
-        />
+        />                                                                                                                                                                                                                                 
       </div>
     );
   }
 }
-
 export default Student;

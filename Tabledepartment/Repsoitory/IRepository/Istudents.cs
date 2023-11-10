@@ -12,8 +12,6 @@ namespace Tabledepartment.Repsoitory.IRepository
        Students GetStudents(int id);
         ICollection<Students> GetStudentsByDepartment(int departmentId);
         bool deletemultistudent(List<int> studentsid);
-      
-
         bool save();
     }
 }

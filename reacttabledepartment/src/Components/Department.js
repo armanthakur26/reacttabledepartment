@@ -4,7 +4,6 @@ import DataTable from 'react-data-table-component'
 import { Link } from 'react-router-dom';
 import {  CSVLink } from "react-csv";
 import { jsPDF } from 'jspdf';
-import Student from './Student';
 
 class Department extends Component {
     constructor(props) {
@@ -39,7 +38,7 @@ class Department extends Component {
             return e.name.toLowerCase().includes(search.toLowerCase());
         });
         this.setState({ search, filter: result });
-    }  
+    }
       getdepartments=()=>{
         axios
           .get("https://localhost:7038/api/Department")
@@ -249,8 +248,7 @@ class Department extends Component {
             space += 70;
           });
           pdf.save('departments.pdf');
-        };  
-       
+        };
         expenddata = (row) => {
          const expandedData = this.state.expandedStudentData[row.data.id] || [];
           const studentscolumns = [
@@ -280,11 +278,10 @@ class Department extends Component {
             </div>
           );
         };
-  render() {
+  render() { 
     const csvData = this.state.Department.map((department) => ({
       Name: department.name,
       Image:department.image
-     
     }));
     const columns = [
         {
@@ -299,11 +296,11 @@ class Department extends Component {
           name: "Actions",
           selector: (e) => (
             <>
-              <button  type="button" class="btn btn-primary" data-toggle="modal" data-target="#editDepartmentModal" className="btn btn-danger" onClick={() => this.editData(e.id)}>
+              <button  type="button" class="btn btn-primary"  title="Edit"data-toggle="modal" data-target="#editDepartmentModal" className="btn btn-danger" onClick={() => this.editData(e.id)}>
               <i className="fas fa-edit"></i>
               </button>
               &nbsp;
-              <button className="btn btn-danger" onClick={() => this.Deletedata(e.id)}> <i className="fas fa-trash"></i> </button>
+              <button className="btn btn-danger"  title="Delete" onClick={() => this.Deletedata(e.id)}> <i className="fas fa-trash"></i> </button>
             </>
           ),
         },]
@@ -451,8 +448,8 @@ class Department extends Component {
  subHeaderComponent={
    <div>
      <input type="text" placeholder="Search..." value={this.state.search}onChange={this.handleSearchChange}/>&nbsp;
-   <button><CSVLink filename="my-file.csv" data={csvData}><i className="fa-regular fa-file-excel" style={{ color: 'green' }}></i></CSVLink></button>&nbsp;
-   <button type="button"  onClick={this.generatePDF}  style={{ color: 'red' }}>
+   <button><CSVLink filename="my-file.csv"  title="Download Excel"data={csvData}><i className="fa-regular fa-file-excel" style={{ color: 'green' }}></i></CSVLink></button>&nbsp;
+   <button  title="Download Pdf" type="button"  onClick={this.generatePDF}  style={{ color: 'red' }}>
    <i class="fas fa-file-pdf"></i>
 </button>
  </div>

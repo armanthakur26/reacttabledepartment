@@ -41,11 +41,27 @@ namespace Tabledepartment.Repsoitory
             return _context.SaveChanges() == 1 ? true : false;
         }
 
+
         public bool updatestudent(Students students)
         {
-           _context.students.Update(students);
+            if (students.Departmentid == 0)
+            {
+                var existingStudent = _context.students.FirstOrDefault(s => s.Id == students.Id);
+                if (existingStudent != null)
+                {
+                    existingStudent.Name = students.Name;
+                    existingStudent.age = students.age;
+                    students.Departmentid = existingStudent.Departmentid;
+                    _context.students.Update(existingStudent);
+                }
+            }
+            else
+            {
+                _context.students.Update(students);
+            }      
             return save();
         }
+
         public ICollection<Students> GetStudentsByDepartment(int departmentId)
         {
             return _context.students
